@@ -1,20 +1,42 @@
 package com.example.bottlespin.ui.screen
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bottlespin.R
@@ -28,12 +50,20 @@ import kotlin.random.Random
 fun BottleSpinScreen(players: List<String>) {
     var rotation by remember { mutableFloatStateOf(0f) }
     var winnerAnimationEnabled by remember { mutableStateOf(false) }
+    var lastWinnerIndex by remember { mutableIntStateOf(-1) } // ✅ Track last winner
 
     val animatedRotation by animateFloatAsState(
         targetValue = rotation,
         animationSpec = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
         label = "Bottle Rotation"
     )
+    // Scale animation for the winner text
+    val scale by animateFloatAsState(
+        targetValue = if (winnerAnimationEnabled) 1.2f else 1f,
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        label = "Winner Scale Animation"
+    )
+
 
     val winnerIndex by remember {
         derivedStateOf {
@@ -61,47 +91,69 @@ fun BottleSpinScreen(players: List<String>) {
         players.map { Color(Random.nextFloat(), Random.nextFloat(), Random.nextFloat(), 1f) }
     }
 
-    // Start winner animation AFTER bottle stops
+    // 🟡 Winner animation handler
     LaunchedEffect(animatedRotation) {
-        if (rotation == animatedRotation) {
+        if (rotation == animatedRotation) { // ✅ When bottle stops
+            lastWinnerIndex = winnerIndex // ✅ Save last winner
             winnerAnimationEnabled = true
-            delay(4000) // Stop animation after 4 seconds
+            delay(4000) // ⏳ Stop animation after 4 seconds
             winnerAnimationEnabled = false
         }
     }
-
-    Column(
+    Box(
         modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        contentAlignment = Alignment.Center
     ) {
-        Text(text = "Current Turn: $winner", fontSize = 24.sp, color = Color.Black)
+        val safeRadius = 140.dp  // 🟢 The same radius used for player placement
+        val textOffset = safeRadius + 70.dp // ✅ Position above the topmost player
 
+        // 🟢 Winner text positioned above the topmost player
+        AnimatedContent(
+            targetState = winner,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(500)).togetherWith(
+                    fadeOut(animationSpec = tween(500))
+                )
+            },
+            label = "Winner Change Animation",
+            modifier = Modifier
+                .offset(y = -textOffset) // ✅ Moves above the highest player dynamically
+                .fillMaxWidth()
+                .graphicsLayer(scaleX = scale, scaleY = scale) // 🔥 Apply scale animation
+        ) { targetWinner ->
+            Text(
+                text = "Current Turn: $targetWinner",
+                fontSize = 35.sp,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        // 🟢 Players and bottle stay in the center
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             players.forEachIndexed { index, name ->
                 val angle = (2 * PI / players.size) * index
-                val safeRadius = 140
+                val playerSafeRadius  = 140.dp
 
-                val isWinner = index == winnerIndex
+                val xOffset = (playerSafeRadius .value * cos(angle)).dp
+                val yOffset = (playerSafeRadius .value * sin(angle)).dp
 
-                // 🎨 Animate winner's color only when enabled
+                val isWinner = index == lastWinnerIndex
+
                 val animatedColor by animateColorAsState(
                     targetValue = if (isWinner && winnerAnimationEnabled) Color.Yellow else colors[index],
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(500),
-                        repeatMode = RepeatMode.Reverse
-                    ),
+                    animationSpec = if (isWinner && winnerAnimationEnabled) {
+                        infiniteRepeatable(animation = tween(500), repeatMode = RepeatMode.Reverse)
+                    } else {
+                        tween(500)
+                    },
                     label = "Winner Color Animation"
                 )
-
                 Box(
                     modifier = Modifier
-                        .offset(
-                            x = (safeRadius * cos(angle)).toFloat().dp,
-                            y = (safeRadius * sin(angle)).toFloat().dp
-                        )
+                        .offset(x = xOffset, y = yOffset)
                         .size(80.dp)
                         .clip(CircleShape)
                         .background(animatedColor),
@@ -115,21 +167,23 @@ fun BottleSpinScreen(players: List<String>) {
                 }
             }
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Image(
-                    painter = painterResource(id = R.drawable.bottle),
-                    contentDescription = "Spinning Bottle",
-                    modifier = Modifier
-                        .size(150.dp)
-                        .graphicsLayer(rotationZ = animatedRotation)
-                        .clickable {
-                            if (rotation == animatedRotation) { // Prevent clicking while spinning
-                                winnerAnimationEnabled = false // Reset winner animation
-                                rotation += Random.nextFloat() * 3600
-                            }
+            Image(
+                painter = painterResource(id = R.drawable.bottle),
+                contentDescription = "Spinning Bottle",
+                modifier = Modifier
+                    .size(150.dp)
+                    .graphicsLayer(rotationZ = animatedRotation)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        if (rotation == animatedRotation) {
+                            winnerAnimationEnabled = false
+                            lastWinnerIndex = -1
+                            rotation += Random.nextFloat() * 3600
                         }
-                )
-            }
+                    }
+            )
         }
     }
 }

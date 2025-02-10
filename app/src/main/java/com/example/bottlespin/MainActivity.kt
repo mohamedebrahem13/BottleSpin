@@ -43,8 +43,8 @@ fun AppNavHost(innerPadding: PaddingValues) {
 
         }
         composable<Bottle> { backStackEntry ->
-            val score = backStackEntry.toRoute<Bottle>()
-            BottleSpinScreen(score.players)
+            val players = backStackEntry.toRoute<Bottle>()
+            BottleSpinScreen(players.players)
         }
     }
 

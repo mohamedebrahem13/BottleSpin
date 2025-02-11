@@ -123,7 +123,7 @@ fun BottleSpinScreen(players: List<String>) {
         ) { targetWinner ->
             Text(
                 text = "Current Turn: $targetWinner",
-                fontSize = 35.sp,
+                fontSize = 30.sp,
                 textAlign = TextAlign.Center
             )
         }

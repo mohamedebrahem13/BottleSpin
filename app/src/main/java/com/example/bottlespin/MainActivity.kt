@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.bottlespin.ui.screen.BottleSpinScreen
 import com.example.bottlespin.ui.screen.PlayerInputScreen
+import com.example.bottlespin.ui.screen.SplashScreenComposable
 import com.example.bottlespin.ui.theme.BottleSpinTheme
 import kotlinx.serialization.Serializable
 
@@ -35,7 +36,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavHost(innerPadding: PaddingValues) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = PickPlayer, modifier = Modifier.padding(innerPadding)) {
+    NavHost(navController = navController, startDestination = Splash, modifier = Modifier.padding(innerPadding)) {
+        // Splash Screen
+        composable<Splash> {
+            SplashScreenComposable {
+                navController.navigate(PickPlayer) {
+                    popUpTo(Splash) { inclusive = true }
+                }
+            }
+        }
         composable<PickPlayer>{
             PlayerInputScreen { players ->
                 navController.navigate(Bottle(players))
@@ -54,3 +63,5 @@ data object PickPlayer
 
 @Serializable
 data class Bottle (val players: List<String>)
+@Serializable
+data object Splash

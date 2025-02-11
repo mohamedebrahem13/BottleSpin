@@ -63,5 +63,6 @@ data object PickPlayer
 
 @Serializable
 data class Bottle (val players: List<String>)
+
 @Serializable
 data object Splash

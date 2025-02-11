@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
+    <style name="Theme.mySplashScreen" parent="Theme.SplashScreen">
+        <item name="android:windowSplashScreenBackground" tools:targetApi="s">@color/purple_200</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="postSplashScreenTheme">"@style/Theme.BottleSpin"</item>
+    </style>
     <style name="Theme.BottleSpin" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

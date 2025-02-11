@@ -6,13 +6,14 @@ The app allows you to enter player names, spin the bottle, and enjoy a game with
 ## 📸 Screenshots  
 
 ### 🚀 Splash Screen  
-![Splash Screen](splash.jpg)  
+![Splash Screen](Screenshot/splash.jpg)  
 
 ### 📝 Player Input Screen  
-![Player Input Screen](playing.png)  
+![Player Input Screen](Screenshot/playing.png)  
 
 ### 🔄 Spinning Bottle  
-![Spinning Bottle](witherror.png)  
+![Spinning Bottle](Screenshot/witherror.png)  
+
 
 ## ✨ Features  
 
